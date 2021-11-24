@@ -1,11 +1,15 @@
 # mlops_tutorial3
 
 ## steps
+
+###init the repository
 * create a new repository on GitHub.com named `mlops_tutorial3`
 * `git clone  https://github.com/tagny/mlops_tutorial3.git`
 * copy files `get_data.py, data_processing.py, train.py`, and `requirements.txt` from  https://github.com/elleobrien/farmer.git to the local dir `mlops_tutorial3`
 * `cd mlops_tutorial3`
 * `pip install -r requirements.txt` 
+
+### setup dvc pipelines
 * `dvc init`
 * Declare the pipeline stages (3 stages):
   * data could change: `dvc run -n get_data -d get_data.py -o data_raw.csv --no-exec python get_data.py`  
@@ -42,6 +46,32 @@
 * Take a snapshot of where we are in the project:
   * `git add .`
   * `git commit -m "setup dvc pipelines"` 
+ 
+### Create our workflow for GitHub Actions
+* create a special file (which will always be in the same place): `github/workflows/train.yaml` 
+* copy the template from the CML repo README on GitHub (`cml.yaml` example) see  and paste in `train.yaml`
+```
+name: model-training
+on: [push]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: iterative/setup-cml@v1
+      - name: Train model
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install -r requirements.txt
+          python train.py
+
+          cat metrics.txt >> report.md
+          cml-publish confusion_matrix.png --md >> report.md
+          cml-send-comment report.md
+```
+
 ## References
 
 * https://github.com/elleobrien/farmer
